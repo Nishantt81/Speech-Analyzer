@@ -1,90 +1,110 @@
-from flask import Flask, render_template, request, jsonify
-from flask_cors import CORS  # Import CORS
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 import google.generativeai as genai
 import os
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
 
+# Enable CORS for all origins
+CORS(app, resources={r"/*": {"origins": "*"}})
+
+# Set up Google Gen AI API Key
 os.environ["GOOGLE_API_KEY"] = "AIzaSyC2YrVBBOjZuM_SJew9BLX6CllTpwP8Y84"
 genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
 
 @app.route('/')
 def index():
-    return render_template('index.html')  # Serve the HTML
-
+    return "Speech Analyzer API is running!", 200
 
 @app.route('/get_response', methods=['POST'])
 def get_response():
-    user_message = request.json.get('message')
+    try:
+        # Ensure JSON data is received
+        if not request.is_json:
+            return jsonify({"error": "Invalid JSON"}), 400
 
-    # The model's response is returned in markdown format (you can return it as is)
-    prompt = f"""
-    You are a professional speech therapist and critic. Your task is to evaluate the given speech transcript for grammatical and pronunciation mistakes. Assign a score based on the correctness, fluency, and clarity of the speech. 
+        data = request.get_json()
+        user_message = data.get('message', '')
 
-    ### **Response Formatting Guidelines:**  
-    - Wrap all **headings** (`Score`, `Grammar Issues`, etc.) in `<h2>` tags with the class **"output-heading"**  
-    - Wrap **grammar and pronunciation issues** in `<ul>` tags with the class **"output-ul"** and use `<li>` for each issue  
-    - Wrap **suggestions and areas needing improvement** in `<ul>` with the class **"output-ul"**  
-    - Wrap all **explanatory text** in `<p>` tags with the class **"output-p"**  
+        if not user_message:
+            return jsonify({"error": "Message cannot be empty"}), 400
 
-    ### **Evaluation Criteria:**  
-    - **Grammar**: Identify and highlight any grammatical errors.  
-    - **Coherence & Flow**: Evaluate whether ideas are connected logically and smoothly.  
-    - **Fluency & Clarity**: Assess how smoothly the speech flows.  
-    - **Readability & Engagement**: Check if the speech is easy to follow and engaging.
-    - **Overall Score**: Provide a numerical score (out of 10) and justify the given score.  
+        logging.info(f"Received message: {user_message}")
 
-    ### **Expected Output Format (HTML):**  
-    ```html
-    <h2 class="output-heading">Score: [Score]</h2>
+        # Generate AI response
+        prompt = f"""
+            You are a professional speech therapist and critic. Your task is to evaluate the given speech transcript for grammatical and pronunciation mistakes. Assign a score based on the correctness, fluency, and clarity of the speech. 
 
-    <h2 class="output-heading">Grammar Issues:</h2>
-    <ul class="output-ul">
-    <li>[List of grammar issues]</li>
-    </ul>
+            ### **Response Formatting Guidelines:**  
+            - Wrap all **headings** (`Score`, `Grammar Issues`, etc.) in `<h2>` tags with the class **"output-heading"**  
+            - Wrap **grammar and pronunciation issues** in `<ul>` tags with the class **"output-ul"** and use `<li>` for each issue  
+            - Wrap **suggestions and areas needing improvement** in `<ul>` with the class **"output-ul"**  
+            - Wrap all **explanatory text** in `<p>` tags with the class **"output-p"**  
 
-    <h2 class="output-heading">Coherence & Flow:</h2>
-    <ul class="output-ul">
-    <li>[Issues with logical flow or disconnected ideas]</li>
-    </ul>
+            ### **Evaluation Criteria:**  
+            - **Grammar**: Identify and highlight any grammatical errors.  
+            - **Coherence & Flow**: Evaluate whether ideas are connected logically and smoothly.  
+            - **Fluency & Clarity**: Assess how smoothly the speech flows.  
+            - **Readability & Engagement**: Check if the speech is easy to follow and engaging.
+            - **Overall Score**: Provide a numerical score (out of 10) and justify the given score.  
 
-    <h2 class="output-heading">Readability & Engagement:</h2>
-    <ul class="output-ul">
-    <li>[Suggestions for making the speech more engaging]</li>
-    </ul>
+            ### **Expected Output Format (HTML):**  
+            ```html
+            <h2 class="output-heading">Score: [Score]</h2>
 
-    <h2 class="output-heading">Suggestions for Improvement:</h2>
-    <ul class="output-ul">
-    <li>[Improvement suggestions]</li>
-    </ul>
+            <h2 class="output-heading">Grammar Issues:</h2>
+            <ul class="output-ul">
+            <li>[List of grammar issues]</li>
+            </ul>
 
-    <h2 class="output-heading">Areas Needing Improvement:</h2>
-    <ul class="output-ul">
-    <li>[Areas needing improvement]</li>
-    </ul>
+            <h2 class="output-heading">Coherence & Flow:</h2>
+            <ul class="output-ul">
+            <li>[Issues with logical flow or disconnected ideas]</li>
+            </ul>
 
-    <p class="output-p">Response Analysis: [Provide an overall assessment of the speech]</p>
+            <h2 class="output-heading">Readability & Engagement:</h2>
+            <ul class="output-ul">
+            <li>[Suggestions for making the speech more engaging]</li>
+            </ul>
 
-    Response: {user_message}
+            <h2 class="output-heading">Suggestions for Improvement:</h2>
+            <ul class="output-ul">
+            <li>[Improvement suggestions]</li>
+            </ul>
 
-    
-    """
+            <h2 class="output-heading">Areas Needing Improvement:</h2>
+            <ul class="output-ul">
+            <li>[Areas needing improvement]</li>
+            </ul>
 
-    model = genai.GenerativeModel('gemini-1.5-flash')
-    response = model.generate_content(prompt)
+            <p class="output-p">Response Analysis: [Provide an overall assessment of the speech]</p>
 
- 
-    generated_text = response.text  # Extract the content as a string
-
-    # Trim the ``` and `html` from the generated text
-    trimmed_text = generated_text.strip('`html\n')
-
-    print(trimmed_text)
+            Response: {user_message}
 
 
-    return jsonify({"response": trimmed_text})
+            """
+
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(prompt)
+
+        generated_text = response.text.strip('`html\n')  # Trim unwanted characters
+
+        logging.info(f"Generated response: {generated_text}")
+
+        return jsonify({"response": generated_text})
+
+    except Exception as e:
+        logging.error(f"Error: {str(e)}", exc_info=True)
+        return jsonify({"error": "Internal Server Error"}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+
+
+
 
