@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@100..900&display=swap" rel="stylesheet">
+    <title>Chatbot</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            background: #DC2424;
+            /* fallback for old browsers */
+            background: -webkit-linear-gradient(to right, #4A569D, #DC2424);
+            /* Chrome 10-25, Safari 5.1-6 */
+            background: linear-gradient(to right, #4A569D, #DC2424);
+            /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+            margin: 0;
+            font-family: 'Lexend Deca', sans-serif;
+        }
+
+        .chat-container {
+            height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            color: #000000;
+        }
+
+        .heading-chat {
+            font-size: 60px;
+            margin-bottom: 20px;
+            background: linear-gradient(to left, #FF512F, #DD2476);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .chat-box {
+            flex-grow: 1;
+            width: 100%;
+            max-width: 800px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #1E1E1E;
+            border-radius: 8px;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(11.5px);
+            -webkit-backdrop-filter: blur(11.5px);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            scrollbar-width: none;
+        }
+
+        .user-msg,
+        .bot-msg {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .user-msg {
+            background-color: #E1F5FE;
+            text-align: right;
+            color: #000;
+        }
+
+        .bot-msg {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(11.5px);
+            -webkit-backdrop-filter: blur(11.5px);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.025);
+            color: #fff;
+            text-align: left;
+        }
+
+        .input-container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            padding: 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            font-family: 'Lexend Deca', sans-serif;
+            background-color: #000;
+            color: #00EDE5;
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(11.5px);
+            -webkit-backdrop-filter: blur(11.5px);
+            border-radius: 10px;
+            border: none;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Lexend Deca', sans-serif;
+        }
+
+
+        .send-btn {
+            background-color: #FFFFFF;
+            color: rgb(0, 0, 0);
+            width: 33.3%;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            gap: 10px; 
+        }
+
+        .send-btn:enabled {
+            background-color: #FFFFFF;
+            color: #000;
+            width: 33.3%;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            gap: 20px; 
+        }
+
+        .microphone-btn {
+            background: #E55D87;
+            /* fallback for old browsers */
+            background: -webkit-linear-gradient(to left, #5FC3E4, #E55D87);
+            /* Chrome 10-25, Safari 5.1-6 */
+            background: linear-gradient(to left, #FF512F, #DD2476);
+            /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+            color: white;
+            width: 33.3%;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            gap: 20px;
+        }
+
+
+        .stop-btn {
+            background: #E52D27;
+            /* fallback for old browsers */
+            background: -webkit-linear-gradient(to left, #B31217, #E52D27);
+            /* Chrome 10-25, Safari 5.1-6 */
+            background: linear-gradient(to right, #B31217, #E52D27);
+            /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+            color: white;
+            width: 33.3%;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            gap: 10px; 
+        }
+        
+        .output-heading{
+            color: #000;
+            font-weight: 600;
+        }
+
+        .output-ul li{
+            list-style: disc;
+            color: #000;
+        }
+
+        .output-p{
+            color: #000;
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat-container">
+        <h2 class="heading-chat">Speech Analyzer</h2>
+        <div class="chat-box" id="chat-box">
+            <!-- Chat history will appear here -->
+        </div>
+        <div class="input-container">
+            <input type="text" id="user-input" placeholder="Ask something..." oninput="toggleSendButton()" />
+            <div class="button-group">
+                <button class="send-btn" id="send-btn" onclick="sendMessage()" disabled><img style="width: 10%;" src="./images/image.png" alt="">Send</button>
+                <button class="microphone-btn" id="start-btn" onclick="startListening()"><img style="width: 10%;" src="./images/mic.png" alt=""> Start Listening</button>
+                <button class="stop-btn" id="stop-btn" onclick="stopListening()" disabled><img style="width: 10%;" src="./images/stop-button.png" alt=""> Stop</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        let chatBox = document.getElementById("chat-box");
+        let userInput = document.getElementById("user-input");
+        let sendButton = document.getElementById("send-btn");
+        let recognition; // Declare the recognition variable globally
+        let isListening = false; // Track listening state
+        let speechBuffer = ""; // Buffer to accumulate speech input
+        const stopButton = document.getElementById("stop-btn");
+        function toggleSendButton() {
+            sendButton.disabled = userInput.value.trim() === '';
+        }
+        function sendMessage() {
+            let userMessage = userInput.value.trim() || speechBuffer;
+            if (userMessage === "") return;
+            // Append user's message to the chat
+            appendMessage('</div>user', userMessage);
+            userInput.value = '';  // Clear input field
+            toggleSendButton();
+            speechBuffer = ""; // Clear the speech buffer after sending
+            // Call the backend (Flask) to get the chatbot response
+            fetch('http://127.0.0.1:5000/get_response', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: userMessage })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    let botResponse = data.response;
+                    // Check if the response is a speech evaluation
+                    if (data.type === 'speech_evaluation') {
+                        appendMessage('bot', formatEvaluationResponse(data));
+                    } else {
+                        appendMessage('bot', botResponse);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+        function appendMessage(sender, message) {
+            let messageDiv = document.createElement("div");
+            messageDiv.classList.add(sender === 'user' ? 'user-msg' : 'bot-msg');
+            // Insert the response as HTML content (so that it renders with proper formatting)
+            messageDiv.innerHTML = message;
+            chatBox.appendChild(messageDiv);
+            // Scroll to the bottom
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        // Format the speech evaluation response with proper styling and spacing
+        function formatEvaluationResponse(data) {
+            let formattedResponse = `
+            <strong>Score:</strong> ${data.score}<br><br>
+            <strong>Grammar Issues:</strong> ${data.grammar || 'None'}<br><br>
+            <strong>Pronunciation Issues:</strong> ${data.pronunciation || 'None'}<br><br>
+            <strong>Suggestions for Improvement:</strong><ul>`;
+            // Check if suggestions exist and format them properly
+            if (data.suggestions && data.suggestions.length > 0) {
+                data.suggestions.forEach(suggestion => {
+                    formattedResponse += `<li>${suggestion}</li>`;
+                });
+            } else {
+                formattedResponse += `<li>No specific suggestions.</li>`;
+            }
+            formattedResponse += '</ul><br>';
+            formattedResponse += `<strong>Areas Needing Improvement:</strong> ${data.areas || 'No specific areas identified.'}<br><br>`;
+            return formattedResponse;
+        }
+        // Voice recognition logic (using Web Speech API)
+        function startListening() {
+            if (!('webkitSpeechRecognition' in window)) {
+                alert("Speech recognition is not supported in your browser.");
+                return;
+            }
+            if (isListening) {
+                alert("Already listening...");
+                return;
+            }
+            recognition = new webkitSpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.continuous = true; // Keep listening continuously
+            recognition.onstart = function () {
+                isListening = true;
+                stopButton.disabled = false; // Enable the stop button
+                console.log("Listening started...");
+            };
+            recognition.onresult = function (event) {
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) {
+                        speechBuffer += event.results[i][0].transcript + " ";
+                    }
+                }
+                console.log("Current speech buffer:", speechBuffer);
+                sendMessage()
+            };
+            recognition.onerror = function (event) {
+                console.error("Speech recognition error:", event.error);
+            };
+            recognition.onend = function () {
+                if (isListening) {
+                    recognition.start(); // Restart recognition if listening
+                }
+            };
+            recognition.start();
+        }
+        function stopListening() {
+            if (recognition && isListening) {
+                recognition.stop();
+                isListening = false;
+                stopButton.disabled = true; // Disable the stop button
+                console.log("Listening stopped. Sending speech buffer...");
+            }
+        }
+    </script>
+</body>
+
+</html>
